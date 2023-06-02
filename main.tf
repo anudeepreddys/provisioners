@@ -62,7 +62,7 @@ resource "aws_security_group" "web_server_sg" {
 
 resource "aws_key_pair" "deployer" {
   key_name   = "deployer-key"
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC+kRWMnp4cIG1H4Nhfy1fP8QvgJ4HFHJKKn7e6/8sD64BWeD9fiSzhVpDyPu9sVbaPFhYS5xM6mCD1fyzDX5gUlny6b7d13fja0JF8lRYG5N0N4UdWpTH1+8MSadK54hIj7eeT0nSEiNMZaZ0gmGjtaI+mkGdEPcUMOtTKqhOTj4v/TqXfVGaXcnSJjKz31FU0z8XbKyu1AnMzZ/TT3SpkNTqiq0vM9Pzb/NsfW3YXEYYPWihfe5LMrw7s4vvkXXlRH4dx0dejRL4j4N3C5x5+c9veT0E6JUchxpLOWbH1CK1fpfVD+Um9gP9hkiXABsl/eKeVddEFbUvWPwXNDg644sp6fnEpj6UT0MMhYA3rU6a4pDIRLq4iEmTNZB+YS+y7a4jStn5PuLJQ13ky+aowE/mcsKzcAXg51aZLSqeUn8L13DqE4yTSIXk6jk39VCaB5vUwaSZ7fe0tVY6PO4EP/Z+2YR6PFhnO7nQveeLv8tFTKnmWHoUZOR8InHVKE0U= anudeep_reddy@DESKTOP-MRVPVPL"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCyJbp78JJQ5tU2Sepst6zFy66r4NtC4zxrBT7kvLO+Peymr5KbfAF2YQaOp4S7o5quh1EfCT7L/+Xg3Jv8DqNrpHakoPENcXKlTYXgh6KX61Nay0d5mogATOUTiaWaa76645Y7If8ZgHg+5filf/776T9NAbzfYNEBFn7MUPGREsJVWO9JpbguvrbAgO7b3DGczZbiZ/usQLnQq2UyCe5HIwnNBr/L+2/F8+LKmZhc+q5NoVJAXATXS/4MuFkpc9LTiUXX1ZBlYQDcNIsjoTpxL/QBTw4l8gvUogi5J2bX8n+kETBf/+4XS4B6oWXXSZdU7E1v42qTutytqG8wT9aCgZqtAw+0A662+GVYa1Jo/+6J28kvf99b2sI1srgLIf4IMIEHUkYaYpNbH4ijnMp5dWktzow9t6i4w6RsPkEsFEGs1dQD58JoimJOvhrVeokGIzkUfc1d6TY8B5PagP09iw/sB6fCdii7vtmQV3fQnrAZHtJOYFIG95aoL1OTN2M= reddy@DESKTOP-MRVPVPL"
 }
 
 resource "aws_instance" "web_server" {
@@ -71,21 +71,30 @@ resource "aws_instance" "web_server" {
   key_name               = aws_key_pair.deployer.key_name
   vpc_security_group_ids = [aws_security_group.web_server_sg.id]
   user_data              = data.template_file.user_data.rendered
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt-get update",
-    ]
+  provisioner "file" {
+    content     = "mars"
+    destination = "/home/ec2-user/abc.txt"
     connection {
       type        = "ssh"
       user        = "ec2-user"
-      private_key = "C:\\Users\\Anudeep Reddy\\.ssh\\terraform"
-      host        = "${self.public_ip}"
+      private_key = file("/home/reddy/.ssh/terraform")
+      host        = self.public_ip
     }
   }
   tags = {
     Name = "web_server"
   }
 }
+
+resource "null_resource" "temp_res" {
+  provisioner "local-exec" {
+    command = "aws ec2 wait instance-status-ok --instance-ids ${aws_instance.web_server.id}"
+
+  }
+  depends_on = [aws_instance.web_server]
+
+}
+
 output "public_ip_address" {
   value = aws_instance.web_server.public_ip
 }
