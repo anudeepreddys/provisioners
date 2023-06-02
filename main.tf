@@ -1,11 +1,12 @@
 terraform {
+  /*
   cloud {
     organization = "warangal"
 
     workspaces {
       name = "provisioners"
     }
-  }
+  }*/
 }
 
 terraform {
@@ -69,9 +70,18 @@ resource "aws_instance" "web_server" {
   instance_type          = "t2.micro"
   key_name               = aws_key_pair.deployer.key_name
   vpc_security_group_ids = [aws_security_group.web_server_sg.id]
-  user_data = data.template_file.user_data.rendered
-
-
+  user_data              = data.template_file.user_data.rendered
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt-get update",
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ec2-user"
+      private_key = "C:\\Users\\Anudeep Reddy\\.ssh\\terraform"
+      host        = "${self.public_ip}"
+    }
+  }
   tags = {
     Name = "web_server"
   }
